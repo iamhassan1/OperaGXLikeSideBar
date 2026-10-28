@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp — mysidebar</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #12131a;
+      color: #f0f0f5;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      border-right: 1px solid #232533;
+    }
+
+    body.pos-right {
+      border-right: none;
+      border-left: 1px solid #232533;
+    }
+
+    .drawer-header {
+      height: 42px;
+      min-height: 42px;
+      background: #161722;
+      border-bottom: 1px solid #232533;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 12px;
+      z-index: 10;
+    }
+
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-title-text {
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: #fa1e4e;
+      text-shadow: 0 0 10px rgba(250, 30, 78, 0.4);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .header-icon-btn {
+      background: transparent;
+      border: none;
+      color: #8b8f9e;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .header-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .header-icon-btn.active {
+      color: #fa1e4e;
+      background: rgba(250, 30, 78, 0.14);
+    }
+
+    .refresh-icon.spin {
+      animation: gx-spin 0.7s linear infinite;
+    }
+
+    @keyframes gx-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .drawer-body {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 42px);
+      background: #111b21;
+    }
+
+    .wa-web-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #111b21;
+      display: block;
+    }
+
+    /* Draggable Resizer Handle on the outer edge of the drawer */
+    .drawer-resizer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 7px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 999;
+      background: transparent;
+      transition: background 0.15s ease;
+    }
+
+    body.pos-right .drawer-resizer {
+      right: auto;
+      left: 0;
+    }
+
+    .drawer-resizer:hover,
+    body.is-dragging .drawer-resizer {
+      background: #fa1e4e;
+      box-shadow: 0 0 8px #fa1e4e;
+    }
+
+    .drag-cover {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 500;
+      display: none;
+      cursor: col-resize;
+    }
+
+    body.is-dragging .drag-cover {
+      display: block;
+    }
+
+    .loading-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0b0c10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 20;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-layer.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loader-pulse-ring {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid #fa1e4e;
+      animation: pulse-ring 1.8s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.6); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 0.2; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="drawer-header">
+    <div class="header-title-box">
+      <svg viewBox="0 0 32 32" width="16" height="16">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="#fa1e4e" stroke-width="2.5" />
+        <circle cx="16" cy="16" r="5" fill="#ff2d55" />
+      </svg>
+      <span class="header-title-text">WHATSAPP</span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Switch Left / Right -->
+      <button class="header-icon-btn" id="headerSideBtn" title="Switch Dock to Left / Right">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+          <path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/>
+        </svg>
+      </button>
+
+      <!-- Refresh -->
+      <button class="header-icon-btn" id="headerRefreshBtn" title="Refresh WhatsApp">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" class="refresh-icon">
+          <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+      </button>
+
+      <!-- Pin Button -->
+      <button class="header-icon-btn" id="headerPinBtn" title="Pin Sidebar">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+          <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
+        </svg>
+      </button>
+
+      <!-- Close / Hide Button -->
+      <button class="header-icon-btn" id="headerCloseBtn" title="Close Panel">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="drawer-body">
+    <div class="drag-cover" id="dragCover"></div>
+    <div class="loading-layer" id="loadingLayer">
+      <div class="loader-pulse-ring"></div>
+      <span style="font-size:12px; color:#8b8f9e;">Loading WhatsApp Web...</span>
+    </div>
+    <iframe
+      class="wa-web-frame"
+      id="waFrame"
+      src="https://web.whatsapp.com/"
+      allow="camera; microphone; clipboard-read; clipboard-write; autoplay; encrypted-media"
+    ></iframe>
+  </div>
+
+  <div class="drawer-resizer" id="drawerResizer" title="Drag to resize width"></div>
+
+  <script src="drawer.js"></script>
+</body>
+</html>
+
